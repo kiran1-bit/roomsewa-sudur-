@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RoomSewa-Sudur | Admin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="header">
+    <div class="logo">
+        <span>🏠</span>
+        <div>
+            <h2>RoomSewa-Sudur</h2>
+            <small>Admin Panel</small>
+        </div>
+    </div>
+
+    <nav>
+        <a href="#dashboard">Dashboard</a>
+        <a href="#owners">Owners</a>
+        <a href="#tenants">Tenants</a>
+        <a href="#listings">Listings</a>
+        <a href="#reports">Reports</a>
+    </nav>
+
+    <div class="admin-user">
+        <div class="avatar">A</div>
+        <span>Admin</span>
+        <button onclick="logout()">Logout</button>
+    </div>
+</header>
+
+
+<main>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="section">
+
+        <div class="page-title">
+            <div>
+                <h1>Admin Dashboard</h1>
+                <p>Manage RoomSewa-Sudur platform</p>
+            </div>
+            <span class="date" id="currentDate"></span>
+        </div>
+
+        <!-- STATISTICS -->
+        <div class="stats-grid">
+
+            <div class="stat-card">
+                <div class="stat-icon blue">👥</div>
+                <div>
+                    <h3 id="totalUsers">0</h3>
+                    <p>Total Users</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon green">🏠</div>
+                <div>
+                    <h3 id="totalListings">0</h3>
+                    <p>Total Listings</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon orange">⏳</div>
+                <div>
+                    <h3 id="pendingListings">0</h3>
+                    <p>Pending Listings</p>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon red">⚠️</div>
+                <div>
+                    <h3 id="totalReports">0</h3>
+                    <p>Reports</p>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- QUICK ACTIONS -->
+        <div class="content-card">
+            <h2>Quick Actions</h2>
+
+            <div class="quick-actions">
+
+                <button onclick="showSection('listings')">
+                    🏠 Manage Listings
+                </button>
+
+                <button onclick="showSection('owners')">
+                    👤 Verify Owners
+                </button>
+
+                <button onclick="showSection('tenants')">
+                    👥 Manage Tenants
+                </button>
+
+                <button onclick="showSection('reports')">
+                    🚨 View Reports
+                </button>
+
+            </div>
+        </div>
+
+
+        <!-- RECENT ACTIVITY -->
+        <div class="content-card">
+
+            <div class="card-header">
+                <h2>Recent Activity</h2>
+                <button class="outline-btn" onclick="showAllActivity()">
+                    View All
+                </button>
+            </div>
+
+            <div id="activityList"></div>
+
+        </div>
+
+    </section>
+
+
+    <!-- OWNERS -->
+    <section id="owners" class="section hidden">
+
+        <div class="page-title">
+            <div>
+                <h1>House Owners</h1>
+                <p>Verify and manage house owners</p>
+            </div>
+        </div>
+
+        <div class="content-card">
+
+            <div class="search-row">
+                <input
+                    type="text"
+                    id="ownerSearch"
+                    placeholder="Search owner..."
+                    onkeyup="searchOwners()"
+                >
+            </div>
+
+            <div class="table-container">
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Owner</th>
+                            <th>Email</th>
+                            <th>Location</th>
+                            <th>Listings</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="ownerTable"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- TENANTS -->
+    <section id="tenants" class="section hidden">
+
+        <div class="page-title">
+            <div>
+                <h1>Tenants</h1>
+                <p>Manage registered tenants</p>
+            </div>
+        </div>
+
+        <div class="content-card">
+
+            <div class="search-row">
+                <input
+                    type="text"
+                    id="tenantSearch"
+                    placeholder="Search tenant..."
+                    onkeyup="searchTenants()"
+                >
+            </div>
+
+            <div class="table-container">
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tenant</th>
+                            <th>Email</th>
+                            <th>Location</th>
+                            <th>Joined</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="tenantTable"></tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- LISTINGS -->
+    <section id="listings" class="section hidden">
+
+        <div class="page-title">
+            <div>
+                <h1>Room Listings</h1>
+                <p>Approve, reject and manage room listings</p>
+            </div>
+        </div>
+
+        <div class="filter-row">
+
+            <button class="filter active" onclick="filterListings('all', this)">
+                All
+            </button>
+
+            <button class="filter" onclick="filterListings('Pending', this)">
+                Pending
+            </button>
+
+            <button class="filter" onclick="filterListings('Active', this)">
+                Active
+            </button>
+
+            <button class="filter" onclick="filterListings('Rejected', this)">
+                Rejected
+            </button>
+
+        </div>
+
+
+        <div id="listingContainer" class="listing-grid"></div>
+
+    </section>
+
+
+    <!-- REPORTS -->
+    <section id="reports" class="section hidden">
+
+        <div class="page-title">
+            <div>
+                <h1>Reports</h1>
+                <p>Review complaints and reported listings</p>
+            </div>
+        </div>
+
+        <div class="content-card">
+
+            <div id="reportContainer"></div>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- LISTING DETAILS MODAL -->
+<div class="modal" id="listingModal">
+
+    <div class="modal-box">
+
+        <div class="modal-header">
+            <h2>Listing Details</h2>
+            <button onclick="closeModal('listingModal')">×</button>
+        </div>
+
+        <div id="listingDetails"></div>
+
+        <div class="modal-actions">
+
+            <button class="reject-btn" onclick="rejectSelectedListing()">
+                Reject
+            </button>
+
+            <button class="approve-btn" onclick="approveSelectedListing()">
+                Approve
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- OWNER MODAL -->
+<div class="modal" id="ownerModal">
+
+    <div class="modal-box">
+
+        <div class="modal-header">
+            <h2>Owner Details</h2>
+            <button onclick="closeModal('ownerModal')">×</button>
+        </div>
+
+        <div id="ownerDetails"></div>
+
+    </div>
+
+</div>
+
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script type="module" src="script.js"></script>
+</body>
+</html>
