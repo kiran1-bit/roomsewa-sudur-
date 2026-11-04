@@ -119,7 +119,7 @@ function displayListings(filter='all'){
     <div class="location">📍 ${esc(l.location)}</div>
     <div class="rent">Rs. ${Number(l.rent).toLocaleString()} /month</div>
     <p class="owner-name">Owner: ${esc(l.owner)}</p><p class="owner-name">Type: ${esc(l.type)}</p><br>
-    <span class="status ${l.status.toLowerCase()}">${l.status}</span>
+    <span class="status ${l.status.toLowerCase()}">${l.status}</span>${feeInfo(l)}
     <div class="listing-actions"><button class="view-listing" onclick="viewListing('${l.id}')">View</button>
     ${l.status==='Pending'?`<button class="approve-listing" onclick="approveListing('${l.id}')">Approve</button><button class="reject-listing" onclick="rejectListing('${l.id}')">Reject</button>`:''}</div></div></div>`).join(''):'<div class="content-card"><p>No listings found.</p></div>';
 }
@@ -132,7 +132,22 @@ function viewListing(id){
   $('listingDetails').innerHTML=[['Room',l.title],['Owner',l.owner],['Location',l.location],['Room Type',l.type],['Monthly Rent','Rs. '+l.rent],['Contact',l.contact],['Description',l.desc],['Status',l.status]].map(r=>`<div class="detail-row"><span>${r[0]}</span><strong>${esc(r[1])}</strong></div>`).join('');
   $('listingModal').style.display='flex';
 }
-const approveListing=id=>setListing(id,'approved','Listing approved.');
+function feeInfo(l){
+  if(!l.feeStatus)return '';
+  const f=l.feeStatus,t={unpaid:'Listing fee not paid',pending:'Fee submitted, please verify',paid:'Listing fee verified ✓',rejected:'Payment rejected'}[f]||f;
+  return `<div style="margin:10px 0;font-size:13px;color:#555">💰 ${t}${f!=='unpaid'?`<br>${esc(l.feeMethod)} · Txn: <b>${esc(l.feeTxn)}</b> · Rs. ${Number(l.feeAmount||0).toLocaleString()}`:''}${f==='pending'?`<div class="listing-actions"><button class="approve-listing" onclick="verifyFee('${l.id}')">Verify payment</button><button class="reject-listing" onclick="rejectFee('${l.id}')">Reject payment</button></div>`:''}</div>`;
+}
+async function verifyFee(id){
+  const l=listings.find(x=>x.id===id);
+  if(listings.some(x=>x.id!==id&&x.feeTxn&&x.feeTxn===l.feeTxn&&x.feeStatus==='paid'))return showToast('This Transaction ID is already used for another room.');
+  await updateDoc(doc(db,'listings',id),{feeStatus:'paid',feeVerifiedAt:Date.now()});showToast('Payment verified. You can approve the room now.');await loadAll();
+}
+async function rejectFee(id){await updateDoc(doc(db,'listings',id),{feeStatus:'rejected'});showToast('Payment rejected.');await loadAll()}
+function approveListing(id){
+  const l=listings.find(x=>x.id===id);
+  if(l&&l.feeStatus&&l.feeStatus!=='paid')return showToast('Verify the listing fee payment first.');
+  return setListing(id,'approved','Listing approved.');
+}
 const rejectListing=id=>setListing(id,'rejected','Listing rejected.');
 function approveSelectedListing(){if(selectedListingId){approveListing(selectedListingId);closeModal('listingModal')}}
 function rejectSelectedListing(){if(selectedListingId){rejectListing(selectedListingId);closeModal('listingModal')}}
@@ -164,8 +179,9 @@ const showAllActivity=()=>showToast('Latest activity is shown in the dashboard.'
 // ---------- COMMON ----------
 const closeModal=id=>$(id).style.display='none';
 async function logout(){
-  if(confirm('Are you sure you want to logout?'))await signOut(auth);
+  if(confirm('Are you sure you want to logout?')){await signOut(auth);window.location.href='../index.html'}
 }
 function showToast(m){const t=$('toast');t.textContent=m;t.style.display='block';clearTimeout(showToast.t);showToast.t=setTimeout(()=>t.style.display='none',2500)}
 
-Object.assign(window,{showSection,searchOwners,searchTenants,viewOwner,verifyOwner,blockOwner,toggleTenant,filterListings,viewListing,approveListing,rejectListing,approveSelectedListing,rejectSelectedListing,resolveReport,removeReportedListing,showAllActivity,closeModal,logout});
+Object.assign(window,{showSection,searchOwners,searchTenants,viewOwner,verifyOwner,blockOwner,toggleTenant,filterListings,viewListing,approveListing,rejectListing,approveSelectedListing,rejectSelectedListing,resolveReport,removeReportedListing,showAllActivity,closeModal,logout,verifyFee,rejectFee});
+p

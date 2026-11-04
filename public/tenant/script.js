@@ -71,7 +71,7 @@ async function loadRooms(){
   try{
     const s=await getDocs(query(collection(db,'listings'),where('status','==','approved')));
     rooms=s.docs.map(d=>{const r=d.data();return{id:d.id,title:r.title,location:r.area,address:r.address||r.area,rent:r.price,type:r.type,
-      owner:r.ownerName,ownerId:r.ownerId,phone:r.contact||'—',bedrooms:r.beds||1,bathrooms:r.bathrooms||1,description:r.desc||'',
+      owner:r.ownerName,ownerId:r.ownerId,phone:r.contact||'—',email:r.ownerEmail||'',bedrooms:r.beds||1,bathrooms:r.bathrooms||1,description:r.desc||'',
       facilities:r.facilities||[],images:r.img?[r.img]:[],latitude:r.latitude,longitude:r.longitude,available:r.available!==false}});
     const opt=(id,all,list)=>{$(id).innerHTML=`<option value="all">${all}</option>`+[...new Set(list)].filter(Boolean).sort().map(x=>`<option>${esc(x)}</option>`).join('')};
     opt('locationFilter','All Locations',rooms.map(r=>r.location));opt('roomTypeFilter','All Room Types',rooms.map(r=>r.type));
@@ -107,7 +107,7 @@ function showRoomDetails(id){
     <div class="facilities">${r.facilities.map(f=>`<span class="facility">✓ ${esc(f)}</span>`).join('')}</div>
     <p>🛏 ${r.bedrooms} Bedroom &nbsp;&nbsp; 🚿 ${r.bathrooms} Bathroom</p>
     <p style="margin-top:15px;line-height:1.7;color:#555">${esc(r.description)}</p>
-    <hr style="margin:20px 0;border:0;border-top:1px solid #ddd"><h3>Property Owner</h3><p>👤 ${esc(r.owner)}</p><p>📞 ${esc(r.phone)}</p>
+    <hr style="margin:20px 0;border:0;border-top:1px solid #ddd"><h3>Property Owner</h3><p>👤 ${esc(r.owner)}</p>${me?`<p>📞 ${esc(r.phone)}</p>${r.email?`<p>✉️ ${esc(r.email)}</p>`:''}`:`<p style="color:#6b7280">🔒 Login to see the owner's phone number and email.</p><button class="details-button" style="margin-top:8px" onclick="closeModal('roomModal');openAuth('login')">Login to view contact</button>`}
     <div class="room-actions"><button class="details-button" onclick="showRoomOnMap('${r.id}')">📍 View on Map</button>
     <button class="contact-button" onclick="closeModal('roomModal');openInquiry('${r.id}')">💬 Contact Owner</button></div></div>`;
   openModal('roomModal');

@@ -1,6 +1,6 @@
 import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import{getFirestore,collection,doc,getDoc,getDocs,setDoc,addDoc,updateDoc,deleteDoc,query,where}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import{getFirestore,collection,doc,getDoc,getDocs,setDoc,addDoc,updateDoc,deleteDoc,query,where,onSnapshot}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 // Same config as public/index.html (copy from there if different)
 const firebaseConfig={
@@ -16,10 +16,17 @@ const $=id=>document.getElementById(id),Q=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const LABEL={pending:'Pending',approved:'Active',rejected:'Rejected'};
 const MAP_STYLE='https://tiles.openfreemap.org/styles/liberty';
-let busy=false,me=null,listings=[],threads=[],editingId=null,lat=null,lng=null,ownerMap=null,addMap=null,pin=null,markers=[],replyIdx=null;
+
+// ===== LISTING FEE SETTINGS (edit these) =====
+const FEE=100;                       // one-time fee per room, in Rs.
+const PAY={name:'RoomSewa-Sudur',    // account holder name shown under the QR
+  esewa:'9810071583',                // admin eSewa ID (shown only if the QR image is missing)
+  qr:'/qr.png'};                     // admin eSewa QR image: save it as public/qr.png
+let newId=null;
+let unsubMsgs=null,busy=false,me=null,listings=[],threads=[],editingId=null,lat=null,lng=null,ownerMap=null,addMap=null,pin=null,markers=[],replyIdx=null;
 
 // extra "Contact phone" field in the Add Room form
-$('roomAddress').previousElementSibling.insertAdjacentHTML('beforebegin','<label>Contact phone</label><input type="text" id="roomContact" placeholder="98XXXXXXXX" required>');
+$('roomAddress').previousElementSibling.insertAdjacentHTML('beforebegin','<label>Contact phone</label><input type="text" id="roomContact" placeholder="9810071583" required>');
 
 // ---------- LOGIN / REGISTER ----------
 const lm=document.createElement('div');
@@ -60,26 +67,31 @@ $('regBtn').onclick=async()=>{
 };
 onAuthStateChanged(auth,u=>{if(!busy)enter(u)});
 async function enter(u){
-  if(!u){me=null;lm.style.display='block';showForm(false);return}
+  if(!u){if(unsubMsgs){unsubMsgs();unsubMsgs=null}me=null;lm.style.display='block';showForm(false);return}
   const s=await getDoc(doc(db,'users',u.uid));
   if(!s.exists()||s.data().role!=='owner'){
     await signOut(auth);$('loginErr').textContent='This is not a house owner account. Use the Register link to create one.';return;
   }
   if(s.data().status==='Blocked'){await signOut(auth);$('loginErr').textContent='Your account has been blocked by the admin.';return}
-  me={uid:u.uid,...s.data()};lm.style.display='none';fill();await loadAll();
+  me={uid:u.uid,...s.data()};lm.style.display='none';fill();await loadAll();listenMessages();
 }
 function fill(){
   Q('.owner-name').textContent='👤 '+me.name;
   Q('.welcome h1').textContent='Welcome, '+me.name+' 👋';
   Q('.profile-avatar').textContent=(me.name||'?')[0].toUpperCase();
   Q('.profile-details').innerHTML=`<h2>${esc(me.name)}</h2><p>📧 ${esc(me.email)}</p><p>📞 ${esc(me.phone||'Not added')}</p><p>🏠 House owner</p><button class="edit-profile" onclick="editProfile()">Edit Profile</button>`;
+  if('Notification' in window&&Notification.permission==='default'&&!$('notifBtn')){
+    const b=document.createElement('button');b.id='notifBtn';b.className='logout-btn';b.textContent='🔔 Enable alerts';
+    b.onclick=async()=>{await Notification.requestPermission();b.remove();showToast('Alerts enabled while this page is open.')};
+    Q('.header-right').prepend(b);
+  }
 }
 
 // ---------- DATA ----------
 async function loadAll(){
   try{
     listings=(await getDocs(query(collection(db,'listings'),where('ownerId','==',me.uid)))).docs.map(d=>({id:d.id,...d.data()}));
-    const ms=(await getDocs(query(collection(db,'messages'),where('oid','==',me.uid)))).docs.map(d=>d.data()).sort((a,b)=>a.t-b.t),m={};
+    const ms=(await getDocs(query(collection(db,'messages'),where('oid','==',me.uid)))).docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.t-b.t),m={};
     ms.forEach(x=>{const k=x.lid+'|'+x.tid;(m[k]=m[k]||{lid:x.lid,tid:x.tid,title:x.title,list:[]}).list.push(x)});
     threads=Object.values(m).map(t=>({...t,tenant:(t.list.find(x=>x.from===x.tid)||{}).fromName||'Tenant'}));
     displayListings();updateStatistics();showMarkers();displayInquiries();
@@ -91,6 +103,39 @@ function updateStatistics(){
   const h=document.querySelectorAll('.stat-card h2');h[2].textContent=threads.length;h[3].textContent='—';
 }
 
+// ---------- LISTING FEE ----------
+function feeHTML(r){
+  const f=r.feeStatus||'paid';
+  if(f==='paid')return r.feeStatus?'<span class="status active" style="margin-left:6px">Fee paid ✓</span>':'';
+  if(f==='pending')return '<span class="status pending" style="margin-left:6px">Fee: waiting for admin to verify</span>';
+  return `<span class="status pending" style="margin-left:6px;background:#fee2e2;color:#b91c1c">${f==='rejected'?'Payment rejected':'Fee not paid'}</span><button class="add-small-btn" style="margin-top:10px;width:100%" onclick="openPay('${r.id}')">Pay Now (Rs. ${FEE})</button>`;
+}
+const pm=document.createElement('div');pm.className='modal';pm.id='payModal';document.body.appendChild(pm);
+let payId=null;
+function openPay(id){
+  payId=id;const r=listings.find(x=>x.id===id);if(!r)return;
+  pm.innerHTML=`<div class="modal-content small-modal"><button class="close-btn" onclick="closePay()">×</button>
+  <h2>Pay with eSewa</h2><p class="modal-description">${esc(r.title)}: one-time listing fee</p>
+  <div style="text-align:center;margin-bottom:14px">
+    <div style="font-size:30px;font-weight:bold;color:#1769aa">Rs. ${FEE}</div>
+    <img src="${esc(PAY.qr)}" alt="eSewa QR" style="width:230px;max-width:100%;margin:10px auto;display:block;border:1px solid #e5e7eb;border-radius:8px" onerror="this.style.display='none';document.getElementById('qrFallback').style.display='block'">
+    <p id="qrFallback" style="display:none;color:#6b7280">eSewa ID: <b>${esc(PAY.esewa)}</b></p>
+    <p style="font-weight:bold">${esc(PAY.name)}</p>
+  </div>
+  <p class="modal-description" style="margin-bottom:12px">1. Open the eSewa app and scan this QR.<br>2. Enter amount <b>Rs. ${FEE}</b> and pay.<br>3. Type the Transaction ID from your eSewa receipt below.</p>
+  <input id="payTxn" placeholder="eSewa Transaction ID" style="${inp}">
+  <button class="publish-btn" style="margin-top:0" onclick="submitPay()">I have paid Rs. ${FEE}</button></div>`;
+  pm.style.display='block';document.body.style.overflow='hidden';
+}
+function closePay(){pm.style.display='none';document.body.style.overflow='auto'}
+async function submitPay(){
+  const txn=$('payTxn').value.trim();if(txn.length<4)return showToast('Enter a valid Transaction ID.');
+  try{
+    await updateDoc(doc(db,'listings',payId),{feeStatus:'pending',feeMethod:'eSewa',feeTxn:txn,feeAmount:FEE,feeAt:Date.now()});
+    closePay();showToast('Payment submitted. Admin will verify it.');await loadAll();
+  }catch(e){showToast(e.message)}
+}
+
 // ---------- LISTINGS ----------
 function displayListings(){
   $('listingContainer').innerHTML=listings.length?listings.map(r=>`<div class="listing-card">
@@ -98,7 +143,7 @@ function displayListings(){
     <div class="listing-body"><h3>${esc(r.title)}</h3><p>📍 ${esc(r.area)}</p>
     <p>${esc(r.type)} • 🚿 ${r.bathrooms||1} Bathroom</p>
     <p class="listing-rent">Rs. ${Number(r.price).toLocaleString()} / month</p>
-    <span class="status ${r.status==='approved'?'active':'pending'}">${LABEL[r.status]||r.status}</span>
+    <span class="status ${r.status==='approved'?'active':'pending'}">${LABEL[r.status]||r.status}</span>${feeHTML(r)}
     <div class="listing-actions"><button class="edit-btn" onclick="editListing('${r.id}')">Edit</button><button class="delete-btn" onclick="deleteListing('${r.id}')">Delete</button></div></div></div>`).join(''):'<p>No listings yet. Click "+ Add New Room".</p>';
 }
 async function deleteListing(id){
@@ -157,8 +202,8 @@ async function addRoom(e){
     const f=$('roomImages').files[0];
     if(f)data.img=await shrink(f);else if(!editingId)data.img='';
     if(editingId){await updateDoc(doc(db,'listings',editingId),data);showToast('Room updated.')}
-    else{await addDoc(collection(db,'listings'),{...data,status:'pending',available:true,ownerId:me.uid,ownerName:me.name,t:Date.now()});showToast('Room submitted for approval! 🏠')}
-    closeRoomModal();await loadAll();
+    else{const ref=await addDoc(collection(db,'listings'),{...data,status:'pending',feeStatus:'unpaid',feeAmount:FEE,available:true,ownerId:me.uid,ownerName:me.name,t:Date.now()});newId=ref.id;showToast('Room saved. Pay the listing fee to send it for approval.')}
+    closeRoomModal();await loadAll();if(newId){const id=newId;newId=null;openPay(id)}
   }catch(err){showToast(err.message)}
 }
 function editListing(id){
@@ -171,6 +216,37 @@ function editListing(id){
   setTimeout(()=>{if(r.latitude){addMap.flyTo({center:[r.longitude,r.latitude],zoom:14});setPin(r.latitude,r.longitude)}},500);
 }
 
+// ---------- LIVE INQUIRIES + ALERTS ----------
+function listenMessages(){
+  if(unsubMsgs)unsubMsgs();
+  let first=true;
+  unsubMsgs=onSnapshot(query(collection(db,'messages'),where('oid','==',me.uid)),snap=>{
+    const ms=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>a.t-b.t),m={};
+    ms.forEach(x=>{const k=x.lid+'|'+x.tid;(m[k]=m[k]||{lid:x.lid,tid:x.tid,title:x.title,list:[]}).list.push(x)});
+    threads=Object.values(m).map(t=>({...t,tenant:(t.list.find(x=>x.from===x.tid)||{}).fromName||'Tenant'}));
+    displayInquiries();updateStatistics();
+    if(!first)snap.docChanges().forEach(c=>{const x={id:c.doc.id,...c.doc.data()};if(c.type==='added'&&x.from!==me.uid)notify(x)});
+    first=false;
+  },e=>showToast(e.message));
+}
+const seen=new Set(),keep=[],baseTitle=document.title;let unread=0;
+function openInquiries(){
+  window.focus();unread=0;document.title=baseTitle;
+  const el=$('inquiries');el.scrollIntoView({behavior:'smooth'});
+  el.style.transition='background .4s';el.style.background='#e0f2fe';setTimeout(()=>el.style.background='',2000);
+  history.replaceState(null,'','#inquiries');
+}
+window.addEventListener('focus',()=>{unread=0;document.title=baseTitle});
+function notify(x){
+  if(seen.has(x.id))return;seen.add(x.id);          // one alert per message
+  unread++;document.title='('+unread+') New inquiry | RoomSewa-Sudur';
+  showToast('💬 New inquiry from '+x.fromName+' about '+x.title+' (click to view)',openInquiries);
+  if('Notification' in window&&Notification.permission==='granted'){
+    const n=new Notification('RoomSewa-Sudur: new inquiry',{body:x.fromName+': '+x.text,tag:x.id});
+    n.onclick=()=>{openInquiries();n.close()};keep.push(n);
+  }
+}
+
 // ---------- INQUIRIES ----------
 function displayInquiries(){
   Q('.inquiry-count').textContent=threads.length+' inquiries';
@@ -178,7 +254,7 @@ function displayInquiries(){
     <div class="inquiry-content"><h3>${esc(t.tenant)}</h3><p class="inquiry-room">Interested in: ${esc(t.title)}</p>
     ${t.list.map(x=>`<p>${x.from===me.uid?'<b>You:</b> ':''}"${esc(x.text)}"</p>`).join('')}
     <small>${new Date(t.list[t.list.length-1].t).toLocaleString()}</small></div>
-    <div class="inquiry-actions"><button onclick="replyInquiry(${i})">Reply</button></div></div>`).join(''):'<p>No inquiries yet.</p>';
+    <div class="inquiry-actions"><button onclick="replyInquiry(${i})">Reply</button><button style="background:#fee2e2;color:#dc2626" onclick="deleteInquiry(${i})">Delete</button></div></div>`).join(''):'<p>No inquiries yet.</p>';
 }
 function replyInquiry(i){
   replyIdx=i;$('replyPerson').innerText='Replying to '+threads[i].tenant;$('replyText').value='';
@@ -191,6 +267,11 @@ async function sendReply(){
     closeReply();showToast('Reply sent successfully! 💬');await loadAll();
   }catch(e){showToast(e.message)}
 }
+async function deleteInquiry(i){
+  const t=threads[i];if(!t||!confirm(`Delete this conversation with ${t.tenant}? The tenant will not see it either.`))return;
+  try{await Promise.all(t.list.map(x=>deleteDoc(doc(db,'messages',x.id))));showToast('Conversation deleted.')}
+  catch(e){showToast(e.message)}
+}
 function closeReply(){$('replyModal').style.display='none';document.body.style.overflow='auto'}
 
 // ---------- PROFILE / LOGOUT / TOAST ----------
@@ -201,11 +282,12 @@ async function editProfile(){
   try{await updateDoc(doc(db,'users',me.uid),upd);me={...me,...upd};fill();showToast('Profile updated.')}catch(e){showToast(e.message)}
 }
 async function logout(){if(confirm('Do you want to logout?')){await signOut(auth);showToast('Logged out successfully.')}}
-function showToast(message){
+function showToast(message,onClick){
   const old=$('toast');if(old)old.remove();
   const t=document.createElement('div');t.id='toast';t.innerText=message;
   t.style.cssText='position:fixed;bottom:25px;right:25px;background:#1769aa;color:white;padding:13px 20px;border-radius:7px;z-index:5000;box-shadow:0 5px 20px rgba(0,0,0,.2)';
-  document.body.appendChild(t);setTimeout(()=>t.remove(),2500);
+  if(onClick){t.style.cursor='pointer';t.onclick=()=>{onClick();t.remove()}}
+  document.body.appendChild(t);setTimeout(()=>t.remove(),onClick?6000:2500);
 }
 
-Object.assign(window,{openAddRoom,closeRoomModal,previewImages,addRoom,editListing,deleteListing,replyInquiry,sendReply,closeReply,editProfile,logout});
+Object.assign(window,{openAddRoom,closeRoomModal,previewImages,addRoom,editListing,deleteListing,openPay,closePay,submitPay,replyInquiry,deleteInquiry,sendReply,closeReply,editProfile,logout});
