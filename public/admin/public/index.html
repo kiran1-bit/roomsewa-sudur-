@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RoomSewa-Sudur | Room Rental Platform</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:Arial,Helvetica,sans-serif;background:#f7f9fc;color:#1f2937}
+.header{height:72px;padding:0 7%;background:#fff;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e5e7eb;position:sticky;top:0;z-index:100}
+.logo{font-size:23px;font-weight:700;color:#1769aa}
+.actions{display:flex;gap:10px;align-items:center}
+.actions span{font-size:14px;color:#6b7280}
+button{padding:9px 17px;border-radius:6px;cursor:pointer;font-size:14px;border:1px solid #1769aa;background:#fff;color:#1769aa}
+button.fill{background:#1769aa;color:#fff}
+.hidden{display:none!important}
+.hero{min-height:480px;display:flex;justify-content:center;align-items:center;text-align:center;color:#fff;padding:40px 20px;background:linear-gradient(rgba(12,55,90,.85),rgba(12,55,90,.85)),url("https://images.unsplash.com/photo-1560185008-b033106af5c3?auto=format&fit=crop&w=1600&q=80") center/cover}
+.hero small{letter-spacing:2px;font-size:13px}
+.hero h1{font-size:46px;line-height:1.15;margin:15px 0 18px}
+.hero h1 span{display:block;color:#8ed1fc}
+.hero p{max-width:620px;margin:auto;line-height:1.7;font-size:17px}
+.panels{max-width:1100px;margin:-60px auto 0;padding:0 20px;display:grid;grid-template-columns:repeat(3,1fr);gap:22px;position:relative}
+.card{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:30px;text-align:center;text-decoration:none;color:inherit;box-shadow:0 8px 25px rgba(0,0,0,.08);transition:.2s;display:block}
+.card:hover{transform:translateY(-5px);border-color:#1769aa}
+.icon{width:64px;height:64px;margin:0 auto 15px;border-radius:50%;background:#e8f4fc;display:flex;align-items:center;justify-content:center;font-size:30px}
+.card h3{margin-bottom:8px}.card p{color:#6b7280;font-size:14px;line-height:1.6;margin-bottom:18px}
+.card b{color:#1769aa;font-size:14px}
+.how{padding:75px 7%;text-align:center}
+.how h2{font-size:30px;margin-bottom:35px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:25px;max-width:900px;margin:auto}
+.step{background:#fff;padding:28px;border-radius:10px;box-shadow:0 3px 12px rgba(0,0,0,.05)}
+.num{width:42px;height:42px;margin:0 auto 12px;border-radius:50%;background:#1769aa;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.step p{color:#6b7280;font-size:14px;margin-top:8px;line-height:1.6}
+footer{background:#102a43;color:#b8c7d6;text-align:center;padding:30px 20px;font-size:13px}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:200;padding:30px;overflow-y:auto}
+.box{background:#fff;max-width:440px;margin:30px auto;border-radius:12px;padding:30px;position:relative}
+.x{position:absolute;top:12px;right:15px;width:35px;height:35px;border:none;border-radius:50%;background:#f3f4f6;font-size:22px;color:#333}
+.tabs{display:flex;margin-bottom:22px;border-bottom:1px solid #ddd}
+.tabs button{flex:1;border:none;background:none;padding:12px;font-weight:700;color:#6b7280;border-radius:0}
+.tabs button.on{color:#1769aa;border-bottom:2px solid #1769aa}
+.box input,.box select{width:100%;padding:13px;margin-bottom:12px;border:1px solid #d1d5db;border-radius:6px;font-size:14px;background:#fff}
+.box h2{margin-bottom:4px}.box .sub{color:#6b7280;margin-bottom:18px;font-size:14px}
+.err{color:#b91c1c;font-size:13px;min-height:18px;margin-bottom:8px}
+.box .go{width:100%;padding:13px;background:#1769aa;color:#fff;border:none;font-size:15px}
+@media(max-width:800px){.panels,.steps{grid-template-columns:1fr}.hero h1{font-size:34px}.panels{margin-top:-30px}.header{padding:0 20px}}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="logo">🏠 RoomSewa-Sudur</div>
+  <div class="actions">
+    <div id="guest" class="actions"><button onclick="openAuth('login')">Login</button><button class="fill" onclick="openAuth('register')">Register</button></div>
+    <div id="member" class="actions hidden"><span id="hi"></span><button class="fill" id="panelBtn">My Panel</button><button onclick="logout()">Logout</button></div>
+  </div>
+</header>
+
+<section class="hero"><div>
+  <small>ROOM RENTAL PLATFORM OF SUDURPASHCHIM</small>
+  <h1>Find a Room That <span>Feels Like Home</span></h1>
+  <p>Discover affordable rooms and houses in Mahendranagar, Kanchanpur and nearby cities of Sudurpashchim.</p>
+</div></section>
+
+<section class="panels">
+  <a class="card" href="/tenant/"><div class="icon">🔎</div><h3>Tenant</h3><p>Search rooms, save favorites, view the map and contact owners.</p><b>Find a room →</b></a>
+  <a class="card" href="/owner/"><div class="icon">🏠</div><h3>House Owner</h3><p>Add your rooms, manage listings and reply to tenant inquiries.</p><b>Open owner panel →</b></a>
+  <a class="card" href="/admin/"><div class="icon">🛡️</div><h3>Admin</h3><p>Approve listings, verify owners, manage users and review reports.</p><b>Open admin panel →</b></a>
+</section>
+
+<section class="how">
+  <h2>How It Works</h2>
+  <div class="steps">
+    <div class="step"><div class="num">1</div><h3>Owner lists a room</h3><p>House owners add room details, photo and map location.</p></div>
+    <div class="step"><div class="num">2</div><h3>Admin approves</h3><p>Every listing is checked before it becomes public.</p></div>
+    <div class="step"><div class="num">3</div><h3>Tenant contacts owner</h3><p>Tenants search, compare and send an inquiry.</p></div>
+  </div>
+</section>
+<footer>© 2026 RoomSewa-Sudur. All rights reserved.</footer>
+
+<div class="modal" id="authModal"><div class="box">
+  <button class="x" onclick="closeAuth()">×</button>
+  <div class="tabs"><button id="tL" onclick="openAuth('login')">Login</button><button id="tR" onclick="openAuth('register')">Register</button></div>
+  <div id="fLogin">
+    <h2>Welcome Back</h2><p class="sub">Login to go to your panel</p>
+    <input id="lEmail" type="email" placeholder="Email address"><input id="lPass" type="password" placeholder="Password">
+    <p class="err" id="lErr"></p><button class="go" onclick="login()">Login</button>
+  </div>
+  <div id="fReg" class="hidden">
+    <h2>Create Account</h2><p class="sub">Register as a tenant or house owner</p>
+    <input id="rName" placeholder="Full name"><input id="rEmail" type="email" placeholder="Email address"><input id="rPhone" type="tel" placeholder="Phone number">
+    <select id="rRole"><option value="tenant">I am a Tenant (looking for a room)</option><option value="owner">I am a House Owner</option></select>
+    <input id="rPass" type="password" placeholder="Password (min 6 characters)"><input id="rConf" type="password" placeholder="Confirm password">
+    <p class="err" id="rErr"></p><button class="go" onclick="register()">Create Account</button>
+  </div>
+</div></div>
+
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import{getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import{getFirestore,doc,getDoc,setDoc}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig={
+  apiKey:"AIzaSyAeK1X1urtNRHq0AWd60RMMBe42648KygA",
+  authDomain:"roomsewa-sudur-410e2.firebaseapp.com",
+  projectId:"roomsewa-sudur-410e2",
+  storageBucket:"roomsewa-sudur-410e2.firebasestorage.app",
+  messagingSenderId:"731405794361",
+  appId:"1:731405794361:web:6a29ada3e1f93e94d661e8"
+};
+const auth=getAuth(initializeApp(firebaseConfig)),db=getFirestore(auth.app);
+const $=id=>document.getElementById(id);
+const PATH={admin:'/admin/',owner:'/owner/',tenant:'/tenant/'};
+let busy=false;
+
+onAuthStateChanged(auth,async u=>{
+  if(busy)return;
+  $('guest').classList.toggle('hidden',!!u);$('member').classList.toggle('hidden',!u);
+  if(!u)return;
+  const s=await getDoc(doc(db,'users',u.uid)),d=s.exists()?s.data():null;
+  if(!d||d.status==='Blocked'){await signOut(auth);return}
+  $('hi').textContent='Hi, '+(d.name||'').split(' ')[0];
+  $('panelBtn').onclick=()=>location.href=PATH[d.role]||'/tenant/';
+});
+
+function openAuth(t){
+  $('authModal').style.display='block';document.body.style.overflow='hidden';
+  const L=t==='login';
+  $('fLogin').classList.toggle('hidden',!L);$('fReg').classList.toggle('hidden',L);
+  $('tL').classList.toggle('on',L);$('tR').classList.toggle('on',!L);
+}
+function closeAuth(){$('authModal').style.display='none';document.body.style.overflow='auto'}
+const msg=e=>e.code?e.code.replace('auth/','').replace(/-/g,' '):e.message;
+
+async function login(){
+  $('lErr').textContent='';
+  const e=$('lEmail').value.trim(),p=$('lPass').value;
+  if(!e||!p){$('lErr').textContent='Please enter email and password.';return}
+  try{
+    busy=true;const c=await signInWithEmailAndPassword(auth,e,p);
+    const s=await getDoc(doc(db,'users',c.user.uid));
+    if(!s.exists()){await signOut(auth);busy=false;$('lErr').textContent='Account profile not found.';return}
+    if(s.data().status==='Blocked'){await signOut(auth);busy=false;$('lErr').textContent='Your account has been blocked by the admin.';return}
+    location.href=PATH[s.data().role]||'/tenant/';
+  }catch(x){busy=false;$('lErr').textContent=msg(x)}
+}
+async function register(){
+  $('rErr').textContent='';
+  const v=id=>$(id).value.trim(),name=v('rName'),email=v('rEmail'),phone=v('rPhone'),role=$('rRole').value,pw=$('rPass').value;
+  if(!name||!email||!phone||!pw)return $('rErr').textContent='Please fill all fields.';
+  if(pw!==$('rConf').value)return $('rErr').textContent='Passwords do not match.';
+  try{
+    busy=true;const c=await createUserWithEmailAndPassword(auth,email,pw);
+    await setDoc(doc(db,'users',c.user.uid),{name,email,phone,role,favs:[]});
+    location.href=PATH[role];
+  }catch(x){busy=false;$('rErr').textContent=msg(x)}
+}
+async function logout(){await signOut(auth);location.reload()}
+Object.assign(window,{openAuth,closeAuth,login,register,logout});
+</script>
+</body>
+</html>

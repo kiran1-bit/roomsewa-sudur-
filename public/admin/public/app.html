@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RoomSewa-Sudur</title>
+<style>
+:root{--bg:#f5f7f6;--card:#fff;--tx:#14201d;--mu:#5b6b66;--bd:#dde5e2;--ac:#0f766e;--ok:#15803d;--wn:#b45309;--bad:#b91c1c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+header{background:var(--card);border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:5}
+.bar{max-width:1000px;margin:auto;padding:10px 14px;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.brand{font-weight:700;font-size:18px;color:var(--ac);margin-right:auto}
+.bar a{color:var(--ac);text-decoration:none;font-size:13px}.bar a:hover{text-decoration:underline}
+nav{max-width:1000px;margin:auto;padding:0 14px 8px;display:flex;gap:6px;overflow-x:auto}
+main{max-width:1000px;margin:auto;padding:16px 14px 60px}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+button.p,nav button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+button.d{color:var(--bad)}
+input,select,textarea{background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;width:100%}
+label{display:block;font-size:13px;color:var(--mu);margin:10px 0 3px}
+.filters{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px}
+.card h3{margin:0 0 4px;font-size:16px}
+.card img{width:100%;height:140px;object-fit:cover;border-radius:8px;margin-bottom:8px}
+.price{font-weight:700;color:var(--ac);font-size:17px}
+.mu{color:var(--mu);font-size:13px}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;border:1px solid var(--bd);margin:6px 4px 0 0}
+.ok{color:var(--ok);border-color:var(--ok)}.wn{color:var(--wn);border-color:var(--wn)}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.sp{margin-left:auto}
+.box{max-width:380px;margin:40px auto}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:flex-start;justify-content:center;overflow:auto;padding:20px 12px;z-index:10}
+#modal .card{max-width:520px;width:100%}
+.msg{padding:6px 10px;border-radius:10px;background:var(--bg);margin:4px 0;max-width:85%}
+.msg.me{background:var(--ac);color:#fff;margin-left:auto}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--tx);color:#fff;padding:8px 16px;border-radius:99px;display:none;z-index:20}
+.empty{text-align:center;color:var(--mu);padding:40px 0;grid-column:1/-1}
+@media(max-width:640px){.filters{grid-template-columns:1fr 1fr}.filters input:first-child{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header><div class="bar"><span class="brand">🏠 RoomSewa-Sudur</span><span class="mu" id="who"></span><a href="/tenant/">Tenant page</a><a href="/owner/">Owner panel</a><a href="/admin/">Admin panel</a><button id="out" style="display:none" onclick="logout()">Log out</button></div><nav id="nav"></nav></header>
+<main id="app"><p class="mu">Loading...</p></main>
+<div id="modal" onclick="if(event.target===this)closeM()"></div>
+<div id="toast"></div>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import{getAuth,onAuthStateChanged,createUserWithEmailAndPassword,signInWithEmailAndPassword,signOut}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import{getFirestore,collection,doc,getDoc,setDoc,addDoc,getDocs,updateDoc,deleteDoc,query,where,arrayUnion,arrayRemove}from"https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// Check these values against Firebase Console > Project settings > Your apps
+const firebaseConfig={
+  apiKey:"AIzaSyAeK1X1urtNRHq0AWd60RMMBe42648KygA",
+  authDomain:"roomsewa-sudur-410e2.firebaseapp.com",
+  projectId:"roomsewa-sudur-410e2",
+  storageBucket:"roomsewa-sudur-410e2.firebasestorage.app",
+  messagingSenderId:"731405794361",
+  appId:"1:731405794361:web:6a29ada3e1f93e94d661e8"
+};
+const auth=getAuth(initializeApp(firebaseConfig)),db=getFirestore(auth.app);
+const AREAS=['Mahendranagar','Dhangadhi','Attariya'],TYPES=['Single Room','1 BHK','2 BHK'];
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let me=null,view='browse',busy=false,mode='login',LST={},TH=[];
+const col=n=>collection(db,n);
+const list=async q=>(await getDocs(q)).docs.map(d=>({id:d.id,...d.data()}));
+const reg=a=>{a.forEach(l=>LST[l.id]=l);return a};
+function toast(t){const e=$('#toast');e.textContent=t;e.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>e.style.display='none',2500)}
+const W=o=>Object.assign(window,o);
+const go=v=>{view=v;render()};
+const closeM=()=>$('#modal').style.display='none';
+
+onAuthStateChanged(auth,u=>{if(!busy)load(u)});
+async function load(u){
+  if(!u){me=null;return render()}
+  const s=await getDoc(doc(db,'users',u.uid));
+  me=s.exists()?{uid:u.uid,favs:[],...s.data()}:null;
+  if(!me){await signOut(auth);return render()}
+  if(me.status==='Blocked'){await signOut(auth);me=null;toast('Your account has been blocked by the admin.');return render()}
+  view=me.role==='admin'?'admin':me.role==='owner'?'mine':'browse';render();
+}
+W({
+  setMode(m){mode=m;render()},
+  async submitAuth(){
+    const email=$('#em').value.trim(),pw=$('#pw').value;
+    try{
+      if(mode==='login'){await signInWithEmailAndPassword(auth,email,pw)}
+      else{
+        const name=$('#nm').value.trim();if(!name)return toast('Enter your name');
+        busy=true;const c=await createUserWithEmailAndPassword(auth,email,pw);
+        await setDoc(doc(db,'users',c.user.uid),{name,email,role:$('#rl').value,favs:[]});
+        busy=false;await load(c.user);
+      }
+    }catch(e){busy=false;toast(e.code?e.code.replace('auth/','').replace(/-/g,' '):e.message)}
+  },
+  logout(){signOut(auth)},go,closeM
+});
+function render(){
+  $('#who').textContent=me?me.name+' · '+me.role:'';$('#out').style.display=me?'':'none';
+  if(!me){
+    $('#nav').innerHTML='';
+    $('#app').innerHTML=`<div class="card box"><h2>${mode==='login'?'Log in':'Create account'}</h2>${mode==='signup'?`<label>Full name</label><input id="nm"><label>I am a</label><select id="rl"><option value="tenant">Tenant (looking for a room)</option><option value="owner">House owner</option></select>`:''}<label>Email</label><input id="em" type="email"><label>Password (min 6 chars)</label><input id="pw" type="password"><div class="row"><button class="p" onclick="submitAuth()">${mode==='login'?'Log in':'Sign up'}</button><button class="sp" onclick="setMode('${mode==='login'?'signup':'login'}')">${mode==='login'?'Create account':'I have an account'}</button></div></div>`;return;
+  }
+  const t=[['browse','Browse']];
+  if(me.role==='tenant')t.push(['favs','Favorites']);
+  if(me.role==='owner')t.push(['mine','My listings'],['add','+ Add room']);
+  me.role==='admin'?t.push(['admin','Admin']):t.push(['msgs','Messages']);
+  $('#nav').innerHTML=t.map(x=>`<button class="${view===x[0]?'on':''}" onclick="go('${x[0]}')">${x[1]}</button>`).join('');
+  ({browse:vBrowse,favs:vFavs,mine:vMine,add:vAdd,msgs:vMsgs,admin:vAdmin}[view]||vBrowse)();
+}
+const rent=l=>'Rs '+Number(l.price).toLocaleString()+'/mo';
+const card=l=>`<div class="card" style="cursor:pointer" onclick="openRoom('${l.id}')">${l.img?`<img src="${esc(l.img)}" alt="" onerror="this.remove()">`:''}<h3>${esc(l.title)}</h3><div class="mu">📍 ${esc(l.address||l.area)}</div><div class="row" style="margin:8px 0 0"><span class="price">${rent(l)}</span>${me.role==='tenant'?`<button class="sp" onclick="fav('${l.id}');event.stopPropagation()">${me.favs.includes(l.id)?'♥':'♡'}</button>`:''}</div><span class="tag">${esc(l.type)}</span><span class="tag ${l.available?'ok':'wn'}">${l.available?'Available':'Occupied'}</span></div>`;
+function fill(id,all,base,k){const e=$('#'+id),v=e.value;e.innerHTML=`<option value="">${all}</option>`+[...new Set([...base,...Object.values(LST).filter(l=>l.status==='approved').map(l=>l[k])])].filter(Boolean).map(a=>`<option>${esc(a)}</option>`).join('');e.value=v}
+async function vBrowse(){
+  $('#app').innerHTML=`<h2>Find a room</h2><div class="filters"><input id="q" placeholder="Search title or description" oninput="grid()"><select id="fa" onchange="grid()"><option value="">All areas</option>${AREAS.map(a=>`<option>${a}</option>`).join('')}</select><select id="ft" onchange="grid()"><option value="">All types</option>${TYPES.map(a=>`<option>${a}</option>`).join('')}</select><input id="fp" type="number" min="0" placeholder="Max rent (Rs)" oninput="grid()"></div><div class="grid" id="grid"><p class="mu">Loading...</p></div>`;
+  try{reg(await list(query(col('listings'),where('status','==','approved'))));fill('fa','All areas',AREAS,'area');fill('ft','All types',TYPES,'type');grid()}catch(e){toast(e.message)}
+}
+W({grid(){
+  const q=$('#q').value.toLowerCase(),a=$('#fa').value,t=$('#ft').value,p=+$('#fp').value||1e9;
+  const r=Object.values(LST).filter(l=>l.status==='approved'&&(!a||l.area===a)&&(!t||l.type===t)&&l.price<=p&&(l.title+' '+l.desc).toLowerCase().includes(q));
+  $('#grid').innerHTML=r.length?r.map(card).join(''):'<div class="empty">No rooms match.</div>';
+}});
+W({async fav(id){
+  const on=me.favs.includes(id);
+  await updateDoc(doc(db,'users',me.uid),{favs:on?arrayRemove(id):arrayUnion(id)});
+  me.favs=on?me.favs.filter(x=>x!==id):[...me.favs,id];view==='browse'?grid():render();
+}});
+async function vFavs(){
+  $('#app').innerHTML='<h2>Favorites</h2><div class="grid" id="grid"></div>';
+  if(!Object.keys(LST).length)reg(await list(query(col('listings'),where('status','==','approved'))));
+  const r=me.favs.map(i=>LST[i]).filter(Boolean);
+  $('#grid').innerHTML=r.length?r.map(card).join(''):'<div class="empty">Tap ♡ on a room to save it.</div>';
+}
+W({openRoom(id){
+  const l=LST[id];if(!l)return;const own=me.uid===l.ownerId;
+  const f=me.role==='tenant'?`<label>Message the owner</label><textarea id="mt" rows="3" placeholder="Is this room still available?"></textarea><div class="row"><button class="p" onclick="sendFirst('${id}')">Send</button></div><label>Report this listing</label><div class="row" style="margin:0"><input id="rp" placeholder="Reason" style="flex:1"><button class="d" onclick="report('${id}')">Report</button></div>`:'';
+  $('#modal').innerHTML=`<div class="card">${l.img?`<img src="${esc(l.img)}" alt="" onerror="this.remove()">`:''}<div class="row" style="margin:0"><h3 style="margin:0">${esc(l.title)}</h3><button class="sp" onclick="closeM()">✕</button></div><div class="mu">📍 ${esc(l.address||l.area)}</div><p><span class="price">${rent(l)}</span> <span class="tag">${esc(l.type)}</span><span class="tag">${l.beds} bed</span><span class="tag ${l.available?'ok':'wn'}">${l.available?'Available':'Occupied'}</span></p><p>${esc(l.desc)}</p><p class="mu">Owner: ${esc(l.ownerName)} · ${esc(l.contact)}<br><a href="https://www.google.com/maps/search/${encodeURIComponent(l.area+' Mahendranagar')}" target="_blank" rel="noopener">View area on map ↗</a></p>${own?'<p class="mu">This is your listing.</p>':f}</div>`;
+  $('#modal').style.display='flex';
+},
+async sendFirst(id){
+  const t=$('#mt').value.trim(),l=LST[id];if(!t)return toast('Write a message');
+  await addDoc(col('messages'),{lid:id,title:l.title,tid:me.uid,oid:l.ownerId,from:me.uid,fromName:me.name,text:t,t:Date.now()});closeM();toast('Message sent');
+},
+async report(id){
+  const r=$('#rp').value.trim();if(!r)return toast('Add a reason');
+  await addDoc(col('reports'),{lid:id,title:LST[id].title,by:me.name,reason:r,t:Date.now()});closeM();toast('Reported to admin');
+}});
+async function vMine(){
+  $('#app').innerHTML='<h2>My listings</h2><div class="grid" id="grid"></div>';
+  const r=reg(await list(query(col('listings'),where('ownerId','==',me.uid))));
+  $('#grid').innerHTML=r.length?r.map(l=>`<div class="card"><h3>${esc(l.title)}</h3><div class="mu">📍 ${esc(l.area)} · ${rent(l)}</div><span class="tag ${l.status==='approved'?'ok':'wn'}">${l.status==='approved'?'Live':'Awaiting admin approval'}</span><span class="tag ${l.available?'ok':'wn'}">${l.available?'Available':'Occupied'}</span><div class="row"><button onclick="toggleAvail('${l.id}')">Mark ${l.available?'occupied':'available'}</button><button class="d sp" onclick="delRoom('${l.id}','mine')">Delete</button></div></div>`).join(''):'<div class="empty">No listings yet.</div>';
+}
+W({async toggleAvail(id){await updateDoc(doc(db,'listings',id),{available:!LST[id].available});render()},
+async delRoom(id,v){await deleteDoc(doc(db,'listings',id));delete LST[id];toast('Removed');go(v)}});
+function vAdd(){
+  $('#app').innerHTML=`<h2>Add a room</h2><div class="card" style="max-width:520px"><label>Title</label><input id="a1"><label>Area</label><select id="a2">${AREAS.map(a=>`<option>${a}</option>`).join('')}</select><label>Type</label><select id="a3">${TYPES.map(a=>`<option>${a}</option>`).join('')}</select><label>Monthly rent (Rs)</label><input id="a4" type="number" min="0"><label>Beds</label><input id="a5" type="number" min="1" value="1"><label>Contact phone</label><input id="a6"><label>Photo URL (optional)</label><input id="a8" placeholder="https://..."><label>Description</label><textarea id="a7" rows="3"></textarea><div class="row"><button class="p" onclick="addRoom()">Submit for approval</button></div></div>`;
+}
+W({async addRoom(){
+  const g=i=>$('#a'+i).value.trim(),t=g(1),p=+g(4),c=g(6);
+  if(!t||!p||!c)return toast('Title, rent and contact required');
+  await addDoc(col('listings'),{title:t,area:g(2),type:g(3),price:p,beds:+g(5)||1,contact:c,img:g(8),desc:g(7)||'No description.',ownerId:me.uid,ownerName:me.name,status:'pending',available:true,t:Date.now()});
+  toast('Submitted for admin approval');go('mine');
+}});
+async function vMsgs(){
+  $('#app').innerHTML='<h2>Messages</h2><div id="th"><p class="mu">Loading...</p></div>';
+  const a=await list(query(col('messages'),where('tid','==',me.uid))),b=await list(query(col('messages'),where('oid','==',me.uid)));
+  const m={};[...a,...b].sort((x,y)=>x.t-y.t).forEach(x=>{const k=x.lid+'|'+x.tid;(m[k]=m[k]||{...x,list:[]}).list.push(x)});
+  TH=Object.values(m);
+  $('#th').innerHTML=TH.length?TH.map((t,i)=>`<div class="card" style="margin-bottom:10px"><b>${esc(t.title)}</b>${t.list.map(x=>`<div class="msg ${x.from===me.uid?'me':''}"><small>${esc(x.fromName)}</small><br>${esc(x.text)}</div>`).join('')}<div class="row"><input id="r${i}" placeholder="Reply..." style="flex:1"><button class="p" onclick="reply(${i})">Send</button></div></div>`).join(''):'<div class="empty">No conversations yet.</div>';
+}
+W({async reply(i){
+  const t=TH[i],v=$('#r'+i).value.trim();if(!v)return;
+  await addDoc(col('messages'),{lid:t.lid,title:t.title,tid:t.tid,oid:t.oid,from:me.uid,fromName:me.name,text:v,t:Date.now()});vMsgs();
+}});
+async function vAdmin(){
+  $('#app').innerHTML='<h2>Admin</h2><h3>Pending approval</h3><div class="grid" id="pd"></div><h3>Reports</h3><div class="grid" id="rp"></div>';
+  const p=reg(await list(query(col('listings'),where('status','==','pending')))),r=await list(col('reports'));
+  $('#pd').innerHTML=p.length?p.map(l=>`<div class="card"><h3>${esc(l.title)}</h3><div class="mu">${esc(l.area)} · ${rent(l)} · by ${esc(l.ownerName)}</div><p>${esc(l.desc)}</p><div class="row"><button class="p" onclick="approve('${l.id}')">Approve</button><button class="d" onclick="delRoom('${l.id}','admin')">Reject</button></div></div>`).join(''):'<div class="empty">Nothing to review.</div>';
+  $('#rp').innerHTML=r.length?r.map(x=>`<div class="card"><b>${esc(x.title)}</b><div class="mu">Reported by ${esc(x.by)}</div><p>${esc(x.reason)}</p><div class="row"><button class="d" onclick="delRoom('${x.lid}','admin')">Remove listing</button><button onclick="dismiss('${x.id}')">Dismiss</button></div></div>`).join(''):'<div class="empty">No reports.</div>';
+}
+W({async approve(id){await updateDoc(doc(db,'listings',id),{status:'approved'});toast('Approved');render()},
+async dismiss(id){await deleteDoc(doc(db,'reports',id));render()}});
+</script>
+</body>
+</html>

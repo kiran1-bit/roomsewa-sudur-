@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>RoomSewa-Sudur | Owner Dashboard</title>
+
+    <!-- MapLibre -->
+    <link
+        href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+</head>
+
+
+<body>
+
+
+<!-- ================= HEADER ================= -->
+
+<header class="header">
+
+    <div class="logo">
+        🏠 RoomSewa-Sudur
+    </div>
+
+
+    <nav>
+
+        <a href="#dashboard">
+            Dashboard
+        </a>
+
+        <a href="#listings">
+            My Listings
+        </a>
+
+        <a href="#inquiries">
+            Inquiries
+        </a>
+
+        <a href="#profile">
+            Profile
+        </a>
+
+    </nav>
+
+
+    <div class="header-right">
+
+        <span class="owner-name">
+            👤 Owner
+        </span>
+
+        <button
+            class="logout-btn"
+            onclick="logout()"
+        >
+            Logout
+        </button>
+
+    </div>
+
+</header>
+
+
+<!-- ================= MAIN ================= -->
+
+<main>
+
+
+<!-- ================= DASHBOARD ================= -->
+
+<section
+    id="dashboard"
+    class="dashboard-section"
+>
+
+    <div class="welcome">
+
+        <div>
+
+            <p class="section-label">
+                OWNER PANEL
+            </p>
+
+            <h1>
+                Welcome, House Owner 👋
+            </h1>
+
+            <p>
+                Manage your rooms and connect
+                with potential tenants.
+            </p>
+
+        </div>
+
+
+        <button
+            class="add-room-btn"
+            onclick="openAddRoom()"
+        >
+            + Add New Room
+        </button>
+
+    </div>
+
+
+    <!-- STATISTICS -->
+
+    <div class="stats">
+
+        <div class="stat-card">
+
+            <div class="stat-icon">
+                🏠
+            </div>
+
+            <div>
+
+                <p>Total Listings</p>
+
+                <h2 id="totalListings">
+                    3
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-icon">
+                ✅
+            </div>
+
+            <div>
+
+                <p>Active Listings</p>
+
+                <h2 id="activeListings">
+                    2
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-icon">
+                💬
+            </div>
+
+            <div>
+
+                <p>Inquiries</p>
+
+                <h2>
+                    8
+                </h2>
+
+            </div>
+
+        </div>
+
+
+        <div class="stat-card">
+
+            <div class="stat-icon">
+                👁️
+            </div>
+
+            <div>
+
+                <p>Total Views</p>
+
+                <h2>
+                    146
+                </h2>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ================= LISTINGS ================= -->
+
+<section
+    id="listings"
+    class="listings-section"
+>
+
+    <div class="section-header">
+
+        <div>
+
+            <p class="section-label">
+                PROPERTY MANAGEMENT
+            </p>
+
+            <h2>
+                My Room Listings
+            </h2>
+
+        </div>
+
+
+        <button
+            class="add-small-btn"
+            onclick="openAddRoom()"
+        >
+            + Add Room
+        </button>
+
+    </div>
+
+
+    <div
+        id="listingContainer"
+        class="listing-container"
+    ></div>
+
+</section>
+
+
+<!-- ================= MAP ================= -->
+
+<section class="map-section">
+
+    <div class="section-header">
+
+        <div>
+
+            <p class="section-label">
+                PROPERTY LOCATION
+            </p>
+
+            <h2>
+                My Properties on Map
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div id="ownerMap"></div>
+
+</section>
+
+
+<!-- ================= INQUIRIES ================= -->
+
+<section
+    id="inquiries"
+    class="inquiries-section"
+>
+
+    <div class="section-header">
+
+        <div>
+
+            <p class="section-label">
+                COMMUNICATION
+            </p>
+
+            <h2>
+                Tenant Inquiries
+            </h2>
+
+        </div>
+
+        <span class="inquiry-count">
+            8 inquiries
+        </span>
+
+    </div>
+
+
+    <div class="inquiry-list">
+
+
+        <!-- Inquiry 1 -->
+
+        <div class="inquiry-card">
+
+            <div class="tenant-avatar">
+                A
+            </div>
+
+
+            <div class="inquiry-content">
+
+                <h3>
+                    Anil Thapa
+                </h3>
+
+                <p class="inquiry-room">
+                    Interested in:
+                    Modern 2 Room Flat
+                </p>
+
+                <p>
+                    "Hello, is this room still
+                    available? I would like to
+                    visit the property."
+                </p>
+
+                <small>
+                    2 hours ago
+                </small>
+
+            </div>
+
+
+            <div class="inquiry-actions">
+
+                <button
+                    onclick="replyInquiry('Anil Thapa')"
+                >
+                    Reply
+                </button>
+
+                <button
+                    class="view-btn"
+                    onclick="viewInquiry()"
+                >
+                    View
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <!-- Inquiry 2 -->
+
+        <div class="inquiry-card">
+
+            <div class="tenant-avatar">
+                S
+            </div>
+
+
+            <div class="inquiry-content">
+
+                <h3>
+                    Sunita Joshi
+                </h3>
+
+                <p class="inquiry-room">
+                    Interested in:
+                    Student Single Room
+                </p>
+
+                <p>
+                    "Can you tell me if Wi-Fi
+                    and parking are available?"
+                </p>
+
+                <small>
+                    Yesterday
+                </small>
+
+            </div>
+
+
+            <div class="inquiry-actions">
+
+                <button
+                    onclick="replyInquiry('Sunita Joshi')"
+                >
+                    Reply
+                </button>
+
+                <button
+                    class="view-btn"
+                    onclick="viewInquiry()"
+                >
+                    View
+                </button>
+
+            </div>
+
+        </div>
+
+
+    </div>
+
+</section>
+
+
+<!-- ================= PROFILE ================= -->
+
+<section
+    id="profile"
+    class="profile-section"
+>
+
+    <div class="section-header">
+
+        <div>
+
+            <p class="section-label">
+                ACCOUNT
+            </p>
+
+            <h2>
+                Owner Profile
+            </h2>
+
+        </div>
+
+    </div>
+
+
+    <div class="profile-card">
+
+        <div class="profile-avatar">
+            R
+        </div>
+
+
+        <div class="profile-details">
+
+            <h2>
+                Ramesh Joshi
+            </h2>
+
+            <p>
+                📧 ramesh@example.com
+            </p>
+
+            <p>
+                📞 98XXXXXXXX
+            </p>
+
+            <p>
+                📍 Dhangadhi, Kailali
+            </p>
+
+            <button
+                class="edit-profile"
+                onclick="editProfile()"
+            >
+                Edit Profile
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+</main>
+
+
+<!-- ================= ADD ROOM MODAL ================= -->
+
+<div
+    id="roomModal"
+    class="modal"
+>
+
+    <div class="modal-content">
+
+        <button
+            class="close-btn"
+            onclick="closeRoomModal()"
+        >
+            ×
+        </button>
+
+
+        <h2>
+            Add New Room
+        </h2>
+
+        <p class="modal-description">
+            Add your property details to publish
+            it on RoomSewa-Sudur.
+        </p>
+
+
+        <form
+            id="roomForm"
+            onsubmit="addRoom(event)"
+        >
+
+
+            <label>
+                Room / Property Title
+            </label>
+
+            <input
+                type="text"
+                id="roomTitle"
+                placeholder="e.g. Modern 2 Room Flat"
+                required
+            >
+
+
+            <div class="two-columns">
+
+                <div>
+
+                    <label>
+                        Location
+                    </label>
+
+                    <select
+                        id="roomLocation"
+                        required
+                    >
+
+                        <option value="">
+                            Select Location
+                        </option>
+
+                        <option>
+                            Dhangadhi
+                        </option>
+
+                        <option>
+                            Mahendranagar
+                        </option>
+
+                        <option>
+                            Attariya
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Room Type
+                    </label>
+
+                    <select
+                        id="roomType"
+                        required
+                    >
+
+                        <option value="">
+                            Select Type
+                        </option>
+
+                        <option>
+                            Single Room
+                        </option>
+
+                        <option>
+                            1 BHK
+                        </option>
+
+                        <option>
+                            2 BHK
+                        </option>
+
+                    </select>
+
+                </div>
+
+            </div>
+
+
+            <div class="two-columns">
+
+                <div>
+
+                    <label>
+                        Monthly Rent
+                    </label>
+
+                    <input
+                        type="number"
+                        id="roomRent"
+                        placeholder="8000"
+                        required
+                    >
+
+                </div>
+
+
+                <div>
+
+                    <label>
+                        Number of Bathrooms
+                    </label>
+
+                    <input
+                        type="number"
+                        id="roomBathrooms"
+                        placeholder="1"
+                        min="1"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+
+            <label>
+                Address
+            </label>
+
+            <input
+                type="text"
+                id="roomAddress"
+                placeholder="Enter full address"
+                required
+            >
+
+
+            <label>
+                Description
+            </label>
+
+            <textarea
+                id="roomDescription"
+                rows="4"
+                placeholder="Describe your property..."
+                required
+            ></textarea>
+
+
+            <label>
+                Facilities
+            </label>
+
+            <div class="facility-options">
+
+                <label class="checkbox">
+                    <input
+                        type="checkbox"
+                        value="Water Supply"
+                    >
+                    Water Supply
+                </label>
+
+                <label class="checkbox">
+                    <input
+                        type="checkbox"
+                        value="Parking"
+                    >
+                    Parking
+                </label>
+
+                <label class="checkbox">
+                    <input
+                        type="checkbox"
+                        value="Wi-Fi"
+                    >
+                    Wi-Fi
+                </label>
+
+                <label class="checkbox">
+                    <input
+                        type="checkbox"
+                        value="Kitchen"
+                    >
+                    Kitchen
+                </label>
+
+                <label class="checkbox">
+                    <input
+                        type="checkbox"
+                        value="Attached Bathroom"
+                    >
+                    Attached Bathroom
+                </label>
+
+            </div>
+
+
+            <label>
+                Property Photos
+            </label>
+
+            <input
+                type="file"
+                id="roomImages"
+                accept="image/*"
+                multiple
+                onchange="previewImages(event)"
+            >
+
+
+            <div
+                id="imagePreview"
+                class="image-preview"
+            ></div>
+
+
+            <!-- LOCATION -->
+
+            <label>
+                Select Property Location
+            </label>
+
+            <div
+                id="addRoomMap"
+                class="add-room-map"
+            ></div>
+
+
+            <p class="coordinates">
+                Selected:
+                <span id="coordinates">
+                    Not selected
+                </span>
+            </p>
+
+
+            <button
+                type="submit"
+                class="publish-btn"
+            >
+                Publish Room
+            </button>
+
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- ================= REPLY MODAL ================= -->
+
+<div
+    id="replyModal"
+    class="modal"
+>
+
+    <div class="modal-content small-modal">
+
+        <button
+            class="close-btn"
+            onclick="closeReply()"
+        >
+            ×
+        </button>
+
+        <h2>
+            Reply to Tenant
+        </h2>
+
+        <p id="replyPerson"></p>
+
+        <textarea
+            id="replyText"
+            rows="5"
+            placeholder="Write your reply..."
+        ></textarea>
+
+        <button
+            class="publish-btn"
+            onclick="sendReply()"
+        >
+            Send Reply
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- ================= SCRIPTS ================= -->
+
+<script
+    src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js">
+</script>
+
+<script type="module" src="script.js"></script>
+
+
+</body>
+</html>

@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>RoomSewa-Sudur | Find Your Room</title>
+
+    <!-- MapLibre -->
+    <link
+        href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css"
+        rel="stylesheet"
+    >
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<!-- ================= HEADER ================= -->
+
+<header class="header">
+
+    <div class="logo">
+        <span>🏠</span> RoomSewa-Sudur
+    </div>
+
+    <nav class="navbar">
+        <a href="#home">Home</a>
+        <a href="#rooms">Rooms</a>
+        <a href="#map-section">Map</a>
+        <a href="#favorites">Favorites</a>
+    </nav>
+
+    <div class="header-actions">
+
+        <button class="login-btn" onclick="openAuth('login')">
+            Login
+        </button>
+
+        <button class="register-btn" onclick="openAuth('register')">
+            Register
+        </button>
+
+        <button class="menu-btn" onclick="toggleMenu()">
+            ☰
+        </button>
+
+    </div>
+
+</header>
+
+
+<!-- ================= MOBILE MENU ================= -->
+
+<div id="mobileMenu" class="mobile-menu">
+
+    <a href="#home">Home</a>
+    <a href="#rooms">Rooms</a>
+    <a href="#map-section">Map</a>
+    <a href="#favorites">Favorites</a>
+
+</div>
+
+
+<!-- ================= HERO ================= -->
+
+<section id="home" class="hero">
+
+    <div class="hero-content">
+
+        <p class="hero-small">
+            ROOM RENTAL PLATFORM OF SUDURPASCHIM
+        </p>
+
+        <h1>
+            Find a Room That
+            <span>Feels Like Home</span>
+        </h1>
+
+        <p class="hero-description">
+            Discover affordable rooms and houses around
+            Dhangadhi, Mahendranagar, Attariya and other
+            cities of Sudurpashchim.
+        </p>
+
+        <!-- SEARCH -->
+
+        <div class="search-box">
+
+            <div class="search-field">
+
+                <span>🔍</span>
+
+                <input
+                    type="text"
+                    id="searchInput"
+                    placeholder="Search location, room or property..."
+                    oninput="filterRooms()"
+                >
+
+            </div>
+
+            <div class="search-field">
+
+                <span>📍</span>
+
+                <select id="locationFilter" onchange="filterRooms()">
+
+                    <option value="all">
+                        All Locations
+                    </option>
+
+                    <option value="Dhangadhi">
+                        Dhangadhi
+                    </option>
+
+                    <option value="Mahendranagar">
+                        Mahendranagar
+                    </option>
+
+                    <option value="Attariya">
+                        Attariya
+                    </option>
+
+                </select>
+
+            </div>
+
+            <button
+                class="search-button"
+                onclick="filterRooms()"
+            >
+                Search
+            </button>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ================= QUICK FEATURES ================= -->
+
+<section class="features">
+
+    <div class="feature">
+        <div class="feature-icon">🔎</div>
+        <div>
+            <h3>Easy Search</h3>
+            <p>Find rooms quickly</p>
+        </div>
+    </div>
+
+    <div class="feature">
+        <div class="feature-icon">📍</div>
+        <div>
+            <h3>Map Location</h3>
+            <p>Know property location</p>
+        </div>
+    </div>
+
+    <div class="feature">
+        <div class="feature-icon">💰</div>
+        <div>
+            <h3>Affordable</h3>
+            <p>Compare room prices</p>
+        </div>
+    </div>
+
+    <div class="feature">
+        <div class="feature-icon">💬</div>
+        <div>
+            <h3>Contact Owner</h3>
+            <p>Send direct inquiry</p>
+        </div>
+    </div>
+
+</section>
+
+
+<!-- ================= ROOMS ================= -->
+
+<section id="rooms" class="rooms-section">
+
+    <div class="section-heading">
+
+        <div>
+            <p class="section-label">EXPLORE</p>
+
+            <h2>Available Rooms</h2>
+
+            <p>
+                Find a suitable room according to your
+                location and budget.
+            </p>
+        </div>
+
+        <div class="result-count" id="resultCount">
+            6 rooms found
+        </div>
+
+    </div>
+
+
+    <!-- FILTERS -->
+
+    <div class="filters">
+
+        <select id="rentFilter" onchange="filterRooms()">
+
+            <option value="all">
+                Any Rent
+            </option>
+
+            <option value="5000">
+                Below Rs. 5,000
+            </option>
+
+            <option value="8000">
+                Below Rs. 8,000
+            </option>
+
+            <option value="10000">
+                Below Rs. 10,000
+            </option>
+
+        </select>
+
+
+        <select id="roomTypeFilter" onchange="filterRooms()">
+
+            <option value="all">
+                All Room Types
+            </option>
+
+            <option value="Single Room">
+                Single Room
+            </option>
+
+            <option value="1 BHK">
+                1 BHK
+            </option>
+
+            <option value="2 BHK">
+                2 BHK
+            </option>
+
+        </select>
+
+
+        <button
+            class="clear-filter"
+            onclick="clearFilters()"
+        >
+            Clear Filters
+        </button>
+
+    </div>
+
+
+    <!-- ROOM CARDS -->
+
+    <div
+        class="room-grid"
+        id="roomContainer"
+    ></div>
+
+
+    <div
+        id="noRooms"
+        class="no-rooms"
+    >
+        <div>🏠</div>
+        <h3>No rooms found</h3>
+        <p>
+            Try changing your search or filters.
+        </p>
+    </div>
+
+</section>
+
+
+<!-- ================= MAP ================= -->
+
+<section
+    id="map-section"
+    class="map-section"
+>
+
+    <div class="section-heading map-heading">
+
+        <div>
+            <p class="section-label">LOCATION</p>
+
+            <h2>Find Rooms on Map</h2>
+
+            <p>
+                Explore available rooms by their location.
+            </p>
+        </div>
+
+    </div>
+
+    <div id="map"></div>
+
+</section>
+
+
+<!-- ================= FAVORITES ================= -->
+
+<section
+    id="favorites"
+    class="favorites-section"
+>
+
+    <div class="section-heading">
+
+        <div>
+            <p class="section-label">SAVED</p>
+
+            <h2>My Favorite Rooms</h2>
+
+            <p>
+                Rooms you have saved for later.
+            </p>
+        </div>
+
+    </div>
+
+    <div
+        id="favoriteContainer"
+        class="favorite-container"
+    >
+
+        <div class="empty-favorite">
+
+            <div>❤️</div>
+
+            <h3>No favorites yet</h3>
+
+            <p>
+                Click the heart button on a room to save it.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ================= HOW IT WORKS ================= -->
+
+<section class="how-section">
+
+    <p class="section-label">HOW IT WORKS</p>
+
+    <h2>Find Your Room in 3 Steps</h2>
+
+    <div class="steps">
+
+        <div class="step">
+
+            <div class="step-number">1</div>
+
+            <h3>Search</h3>
+
+            <p>
+                Search rooms by location, rent
+                and room type.
+            </p>
+
+        </div>
+
+
+        <div class="step">
+
+            <div class="step-number">2</div>
+
+            <h3>Explore</h3>
+
+            <p>
+                Check photos, facilities,
+                price and map location.
+            </p>
+
+        </div>
+
+
+        <div class="step">
+
+            <div class="step-number">3</div>
+
+            <h3>Contact</h3>
+
+            <p>
+                Contact the owner and
+                send your inquiry.
+            </p>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- ================= FOOTER ================= -->
+
+<footer>
+
+    <div class="footer-content">
+
+        <div>
+
+            <h2>🏠 RoomSewa-Sudur</h2>
+
+            <p>
+                A room rental platform for
+                Sudurpashchim.
+            </p>
+
+        </div>
+
+        <div>
+
+            <h3>Quick Links</h3>
+
+            <a href="#home">Home</a>
+            <a href="#rooms">Rooms</a>
+            <a href="#map-section">Map</a>
+
+        </div>
+
+        <div>
+
+            <h3>For Tenants</h3>
+
+            <a href="#" onclick="openAuth('login')">
+                Login
+            </a>
+
+            <a href="#" onclick="openAuth('register')">
+                Register
+            </a>
+
+            <a href="#favorites">
+                Favorites
+            </a>
+
+        </div>
+
+    </div>
+
+    <div class="footer-bottom">
+
+        © 2026 RoomSewa-Sudur. All rights reserved.
+
+    </div>
+
+</footer>
+
+
+<!-- ================= ROOM DETAILS MODAL ================= -->
+
+<div
+    id="roomModal"
+    class="modal"
+>
+
+    <div class="modal-content room-modal">
+
+        <button
+            class="close-button"
+            onclick="closeModal('roomModal')"
+        >
+            ×
+        </button>
+
+        <div id="roomDetails"></div>
+
+    </div>
+
+</div>
+
+
+<!-- ================= AUTH MODAL ================= -->
+
+<div
+    id="authModal"
+    class="modal"
+>
+
+    <div class="modal-content auth-modal">
+
+        <button
+            class="close-button"
+            onclick="closeModal('authModal')"
+        >
+            ×
+        </button>
+
+
+        <div class="auth-tabs">
+
+            <button
+                id="loginTab"
+                onclick="showAuthForm('login')"
+            >
+                Login
+            </button>
+
+            <button
+                id="registerTab"
+                onclick="showAuthForm('register')"
+            >
+                Register
+            </button>
+
+        </div>
+
+
+        <!-- LOGIN -->
+
+        <div
+            id="loginForm"
+            class="auth-form"
+        >
+
+            <h2>Welcome Back</h2>
+
+            <p>Login as a tenant</p>
+
+            <input
+                type="email"
+                id="loginEmail"
+                placeholder="Email address"
+            >
+
+            <input
+                type="password"
+                id="loginPassword"
+                placeholder="Password"
+            >
+
+            <button
+                class="auth-submit"
+                onclick="loginTenant()"
+            >
+                Login
+            </button>
+
+            <p class="auth-switch">
+                Don't have an account?
+                <a onclick="showAuthForm('register')">
+                    Register
+                </a>
+            </p>
+
+        </div>
+
+
+        <!-- REGISTER -->
+
+        <div
+            id="registerForm"
+            class="auth-form hidden"
+        >
+
+            <h2>Create Account</h2>
+
+            <p>Register as a tenant</p>
+
+            <input
+                type="text"
+                id="registerName"
+                placeholder="Full name"
+            >
+
+            <input
+                type="email"
+                id="registerEmail"
+                placeholder="Email address"
+            >
+
+            <input
+                type="tel"
+                id="registerPhone"
+                placeholder="Phone number"
+            >
+
+            <input
+                type="password"
+                id="registerPassword"
+                placeholder="Password"
+            >
+
+            <input
+                type="password"
+                id="registerConfirm"
+                placeholder="Confirm password"
+            >
+
+            <button
+                class="auth-submit"
+                onclick="registerTenant()"
+            >
+                Create Account
+            </button>
+
+            <p class="auth-switch">
+                Already have an account?
+                <a onclick="showAuthForm('login')">
+                    Login
+                </a>
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ================= INQUIRY MODAL ================= -->
+
+<div
+    id="inquiryModal"
+    class="modal"
+>
+
+    <div class="modal-content inquiry-modal">
+
+        <button
+            class="close-button"
+            onclick="closeModal('inquiryModal')"
+        >
+            ×
+        </button>
+
+        <h2>Contact Owner</h2>
+
+        <p id="inquiryRoomName"></p>
+
+        <input
+            type="text"
+            id="inquiryName"
+            placeholder="Your name"
+        >
+
+        <input
+            type="tel"
+            id="inquiryPhone"
+            placeholder="Your phone number"
+        >
+
+        <textarea
+            id="inquiryMessage"
+            rows="5"
+            placeholder="Write your message..."
+        ></textarea>
+
+        <button
+            class="auth-submit"
+            onclick="sendInquiry()"
+        >
+            Send Inquiry
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- MapLibre JS -->
+
+<script
+    src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js">
+</script>
+
+<script type="module" src="script.js"></script>
+</body>
+</html>
